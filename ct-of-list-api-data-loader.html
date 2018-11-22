@@ -1,0 +1,36 @@
+<link rel="import" href="../polymer/polymer-element.html">
+
+<dom-module id="ct-of-list-api-data-loader">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+    </style>
+    <h2>Hello [[prop1]]!</h2>
+  </template>
+
+  <script>
+    /**
+     * `ct-of-list-api-data-loader`
+     * 
+     *
+     * @customElement
+     * @polymer
+     * @demo demo/index.html
+     */
+    class CtOfListApiDataLoader extends Polymer.Element {
+      static get is() { return 'ct-of-list-api-data-loader'; }
+      static get properties() {
+        return {
+          prop1: {
+            type: String,
+            value: 'ct-of-list-api-data-loader'
+          }
+        };
+      }
+    }
+
+    window.customElements.define(CtOfListApiDataLoader.is, CtOfListApiDataLoader);
+  </script>
+</dom-module>
