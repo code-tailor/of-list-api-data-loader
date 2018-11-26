@@ -1,4 +1,4 @@
-let offlineListDataManager = class OfflineListDataManager {
+class OfflineListDataManager {
 
   constructor(databaseName, sortKeyGenerator, listId) {
     this._sortKeyGenerator = sortKeyGenerator || this._defaultSortKeyGenerator;
@@ -24,6 +24,8 @@ let offlineListDataManager = class OfflineListDataManager {
         resolve({
           items: items
         });
+        let localItemIndex = this._findItemIndex(startKey);
+        this._spliceCallbackFn && this._spliceCallbackFn(localItemIndex, 0, ...items);
       }).catch(reject);
     });
   }
@@ -36,44 +38,51 @@ let offlineListDataManager = class OfflineListDataManager {
    * @param {Boolean} eol - Whether this is end-of-list or not.
    */
   upsert(items, startKey, eol) {
-    //TODO: this._init.then
-    var localItems = this._localDoc.items;
-    var localItemIndex = this._findItemIndex(startKey);
+    return this._init().then(() => {
+      var localItems = this._localDoc.items;
+      var localItemIndex = this._findItemIndex(startKey);
 
 
-    for (var index = 0; index < items.length; index++) {
+      for (var index = 0; index < items.length; index++) {
 
-      // Add remaing items to local items
-      if (localItemIndex >= localItems.length) {
-        this._spliceLocalItems(localItemIndex, 0, items.slice(index));
-        break;
-      }
+        // Add remaing items to local items
+        if (localItemIndex >= localItems.length) {
+          items.slice(index).forEach(item => {
+            this._upsertItem(item);
+          });
+          this._spliceLocalItems(localItemIndex, 0, items.slice(index));
+          break;
+        }
 
-      // compare item with local item
-      let comparatorValue = this._compare(items[index], localItems[localItemIndex]);
+        // compare item with local item
+        var localItem = localItems[localItemIndex];
+        let comparatorValue = this._compareItems(items[index], this._items[localItem.id]);
+        
+        if (comparatorValue < 0) {
+          //prepend this item to localItems.
+          this._upsertItem(items[index]);
+          this._spliceLocalItems(localItemIndex, 0, items[index]);
+          //Remove this items duplicate instance if any
+          this._removeFromLocalItems(items[index]._id, localItemIndex+1);
+          localItemIndex++;
+        }
 
-
-      if (comparatorValue < 0) {
-        //prepend this item to localItems.
-        this._upsertItem(item);
-        this._spliceLocalItems(localItemIndex, 0, item);
-        //Remove this items duplicate instance if any
-        this._removeFromLocalItems(item._id, localItemIndex+1);
+        if (comparatorValue > 0) {
+          //remove this local item.
+          this._removeItem(localItems[localItemIndex]);
+          this._spliceLocalItems(localItemIndex, 1);
+        }
+        
+        if((index + 1) === items.length){
+          this._deleteRemaingItems(localItemIndex + 1);
+        }
+        
+        //TODO: Update item if it's updated by value.
         localItemIndex++;
       }
 
-      if (comparatorValue > 0) {
-        //remove this local item.
-        this._removeItem(localItems[localItemIndex]);
-        this._spliceLocalItems(localItemIndex, 1);
-        return;
-      }
-
-      //TODO: Update item if it's updated by value.
-      localItemIndex++;
-    }
-
-    this._saveLocalDoc();
+      this._saveLocalDoc();
+    });
   }
 
   /**
@@ -87,10 +96,30 @@ let offlineListDataManager = class OfflineListDataManager {
 
 
   _init() {
-    //TODO: Return Promise
-    this._localStore.readListDoc().then(function (listDoc) {
-      this._localDoc = listDoc;
-      //TODO: Load all items.
+    return new Promise((resolve, reject) => {
+      this._localStore.readListDoc().then((listDoc) => {
+        this._localDoc = listDoc;
+        
+        // Load all items.
+        var docIds = this._localDoc.items.map(item => {
+          return {id: item.id}
+        });
+        
+        if(!docIds.length){
+          resolve();
+          return;
+        }
+        
+        this._localStore.readItems(docIds).then(results => {
+          results.forEach(item => {
+            if(item){
+               this._items[item._id] = item;
+            }
+          });
+          resolve();
+        });
+        
+      });
     });
   }
 
@@ -105,7 +134,7 @@ let offlineListDataManager = class OfflineListDataManager {
 
   _readItems(itemids) {
     return itemids.map((id) => {
-      return this.items[id];
+      return this._items[id];
     });
   }
 
@@ -117,22 +146,34 @@ let offlineListDataManager = class OfflineListDataManager {
    * @returns {Boolean} `true` if given item is inserted or updated.
    */
   _upsertItem(item) {
-    //TODO
+    if(this._items[item.id]){
+      return false;
+    }
+    
+    this._items[item._id] = item;
+    this._localStore.upsertItems([item]);
+    
+    return true;
   }
 
 
   _removeItem(item) {
-
+    delete this._items[item.id];
+    this._localStore.removeItems([item.id]);
   }
 
   _saveLocalDoc(){
-
+    this._localStore.saveListDoc(this._localDoc);
   }
 
   _removeFromLocalItems(id, startIndex) {
     var items = this._localDoc.items;
     for(var i=startIndex; i++; i < items.length) {
-      if(items[i]._id == id) {
+      if(!items[i]){
+        return;
+      }
+      
+      if(items[i].id === id) {
         this._spliceLocalItems(i, 1);
         break;
       }
@@ -147,13 +188,13 @@ let offlineListDataManager = class OfflineListDataManager {
    * @param {*} sortKey 
    */
   _findItemIndex(sortKey) {
-    let items = localDoc.items;
+    let items = this._localDoc.items;
     let index = items.findIndex(item => {
-      return this._compare(item.sortKey, sortKey) >= 0;
+      return this._compare(item.sortKey, sortKey) <= 0;
     });
 
     if (index == -1) {
-      return localDoc.items.length;
+      return 0;
     }
 
     if (this._compare(items[index].sortKey, sortKey) == 0) {
@@ -166,9 +207,15 @@ let offlineListDataManager = class OfflineListDataManager {
 
   _readItemIdsFromLocalDoc(pageSize, startKey) {
     let index = this._findItemIndex(startKey);
-    return items.slice(index, Math.min(items.length, index + pageSize)).map((item) => {
+    return this._localDoc.items.slice(index, Math.min(this._localDoc.items.length, index + pageSize)).map((item) => {
       return item.id;
     });
+  }
+  
+  _deleteRemaingItems(index){
+    let localItems = [...this._localDoc.items];
+    let itemsToBeDelete = localItems.slice(index);
+    this._spliceLocalItems(index, itemsToBeDelete.length);
   }
 
   _defaultSortKeyGenerator(item) {
@@ -197,17 +244,14 @@ let offlineListDataManager = class OfflineListDataManager {
         sortKey: this._sortKeyGenerator(item)
       };
     });
-    localItems.splice(startIndex, removedCount, ...newItems);
-    this._spliceCallbackFn && this._spliceCallbackFn(startIndex, removedCount, newItems);
-
-    if (removedCount) {
-      localItems.splice(index, removedCount);
-    }
+    localItems.splice(startIndex, removedCount, ...newLocalItems);
+    this._spliceCallbackFn && this._spliceCallbackFn(startIndex, removedCount, ...newItems);
   }
 
 }
 
 
+// Class to compare two values
 class Comparator {
 
   compare(a, b) {
@@ -280,7 +324,7 @@ class Comparator {
     var len = Math.min(a.length, b.length);
 
     for (var i = 0; i < len; i++) {
-      var sort = this._eq(a[i], b[i]);
+      var sort = this.compare(a[i], b[i]);
       if (sort !== 0) {
         return sort;
       }
@@ -299,13 +343,13 @@ class Comparator {
 
     for (var i = 0; i < len; i++) {
 
-      var sort = this._eq(ak[i], bk[i]);
+      var sort = this.compare(ak[i], bk[i]);
 
       if (sort !== 0) {
         return sort;
       }
 
-      sort = this._eq(a[ak[i]], b[bk[i]]);
+      sort = this.compare(a[ak[i]], b[bk[i]]);
       if (sort !== 0) {
         return sort;
       }
@@ -336,22 +380,26 @@ class Comparator {
 }
 
 
+//Performs pouchdb operations
 class LocalStore {
   constructor(dbName, listId) {
     this._dbName = dbName;
     this._listId = listId || 'default';
     this._localDocId = '_local/list-' + this._listId;
-    this.db = new PouchDB(this._databaseName);
+    this.db = new PouchDB(this._dbName);
   }
 
   readListDoc() {
-    new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       this.db.get(this._localDocId).then((doc) => {
         resolve(doc);
       }).catch(() => {
-        let doc = {}; //TODO;
+        let doc = {
+          _id: this._localDocId,
+          items: [],
+        };
         resolve(doc);
-        this.db.post(this._localDoc).catch((err) => {
+        this.db.post(doc).catch((err) => {
           console.warn('Failed to create local doc for list. db=' + this._dbName + ' listId=' + this._listId, err);
         });
       });
@@ -359,7 +407,10 @@ class LocalStore {
   }
 
   saveListDoc(doc) {
-    return this.db.put(this._localDoc);
+    return this.db.get(doc._id).then((res) => {
+      doc._rev = res._rev;
+      this.db.put(doc);
+    });
   }
 
   readItems(docIds) {
@@ -380,9 +431,19 @@ class LocalStore {
   }
 
   upsertItems(items) {
+    this.db.bulkDocs(items).catch((err) => {
+     console.error('Failed to upsert items in db. db name:' + this._dbName, err);
+    });
   }
 
   removeItems(itemIds) {
+    itemIds.forEach(id => {
+      this.db.get(id).then((doc) => {
+        return this.db.remove(doc);
+      }).catch((err) => {
+        console.warn('Failed to delete document. db name' + this._dbName + ' docId=' + id, err);
+      });
+    })
   }
 
   _sortById(response, docIds) {
@@ -390,13 +451,15 @@ class LocalStore {
 
     response.forEach(res => {
       var item = res.docs[0].ok;
-      var sortKey = this._sortKeyGenerator(item);
-      responseMap[sortKey] = item;
+      if(!item){
+        return;
+      }
+      responseMap[item._id] = item;
     });
 
     let sortedResponse = [];
     docIds.forEach(item => {
-      sortedResponse.push(responseMap[item.sortKey]);
+      sortedResponse.push(responseMap[item.id]);
     });
     return sortedResponse;
   }
@@ -411,6 +474,4 @@ class LocalStore {
       });
     });
   }
-
-
 }

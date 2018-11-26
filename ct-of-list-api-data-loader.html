@@ -1,19 +1,19 @@
 <link rel="import" href="../polymer/polymer-element.html">
+<link rel="import" href="dependency-loader.html">
 
 <dom-module id="ct-of-list-api-data-loader">
   <template>
     <style>
       :host {
-        display: block;
+        display: none;
       }
     </style>
-    <h2>Hello [[prop1]]!</h2>
   </template>
 
   <script>
     /**
-     * `ct-of-list-api-data-loader`
-     * 
+     * `ct-of-list-api-data-loader` which is used to fetch paginated list data in offline first manners
+     * If data is available in offline it returns it otherwise fetches from server
      *
      * @customElement
      * @polymer
@@ -23,12 +23,135 @@
       static get is() { return 'ct-of-list-api-data-loader'; }
       static get properties() {
         return {
-          prop1: {
-            type: String,
-            value: 'ct-of-list-api-data-loader'
+          
+          /*
+           * Output property
+           * List data
+           */
+          items: {
+            type: Array,
+            value: function(){
+              return [];
+            },
+            notify: true
+          },
+          
+          /*
+           * Output property
+           * True when fetch request is in progress
+           */
+          requestInProgress:{
+            type: Boolean,
+            value: false,
+            notify: true
+          },
+          
+         /*
+          * Input property
+          * Url from where data is to be fetched from server
+          */
+          url:{
+            type: Object
+          },
+          
+          /*
+           * Input property
+           * Set this to parse server response
+           */
+          responseParser: {
+            type: Object
+          },
+          
+          /*
+           * Input property
+           * Set this to set sort key which is used to fetch next page data
+           */
+          sortKeyGenerator: {
+            type: Object
+          },
+          
+          /*
+           * Input property
+           * databse name
+           */
+          pouchDbName:{
+            type: String
+          },
+          
+          /*
+           * Input property
+           * List id which is used to identify local doc of database
+           */
+          listId:{
+            type: String
+          },
+          
+          /*
+           * Input property
+           * Number of page to be fetch from server
+           */
+          pageSize:{
+            type: Number,
+            value: 50
+          },
+          
+          /*
+           * Input property
+           * Headers to be set on server request
+           * NOTE: should must return promise
+           */
+          headers: {
+            type: Object
+          },
+          
+          _offlineFirstListAPIDataLoader:{
+            type: Object
           }
         };
       }
+      
+      static get observers() {
+        return [
+          '_createInstance(url,headers, responseParser,pageSize,sortKeyGenerator,pouchDbName,listId)'
+          
+        ]
+      }
+      
+      // Fetch page in offline first manner
+      loadNextPage() {
+        if(this.requestInProgress){
+          return;
+        }
+        
+        this.set('requestInProgress', true);
+        
+        this._offlineFirstListAPIDataLoader.loadNextPage().then(() =>{
+          this.set('requestInProgress', false);
+        }).catch(() =>{
+          this.set('requestInProgress', false);
+        });
+      }
+      
+      spliceObserver(index, removedItemCount, ...addItems){
+        this.splice('items', index, removedItemCount, ...addItems);
+      };
+      
+      _createInstance(url,headers,responseParser,pageSize,sortKeyGenerator,pouchDbName,listId){
+        let offlineListApi = ct.offlineFirstListAPIDataLoader;
+        if(!offlineListApi){
+          console.error('offlineFirstListAPIDataLoader is not found');
+          return;
+        }
+        
+        if(!this.url){
+          console.error('Url is not provided');
+          return;
+        }
+        
+        this._offlineFirstListAPIDataLoader = new ct.offlineFirstListAPIDataLoader(url,headers,responseParser,pageSize,sortKeyGenerator,pouchDbName,listId);
+        this._offlineFirstListAPIDataLoader.spliceObserver(this.spliceObserver.bind(this));
+      }
+      
     }
 
     window.customElements.define(CtOfListApiDataLoader.is, CtOfListApiDataLoader);

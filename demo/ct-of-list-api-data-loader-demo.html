@@ -1,0 +1,133 @@
+<link rel="import" href="../../polymer/polymer-element.html">
+<link rel="import" href="../ct-of-list-api-data-loader.html">
+
+<dom-module id="ct-of-list-api-data-loader-demo">
+  <template>
+    <style>
+      :host {
+        display: none;
+      }
+    </style>
+    
+    <ct-of-list-api-data-loader
+      items={{items}}
+      url=[[url]]
+      response-parser=[[responseParser]]
+      sort-key-generator="[[sortKeyGenerator]]"
+      pouch-db-name="[[pouchDBName]]"
+      list-id="[[listId]]"
+      page-size="[[pageSize]]"
+      headers="[[headers]]"
+      request-in-progress="{{requestInProgress}}"
+      ></ct-of-list-api-data-loader>
+  </template>
+
+  <script>
+    /**
+     * `ct-of-list-api-data-loader-demo`
+      * 
+     *
+     * @customElement
+     * @polymer
+     * @demo demo/index.html
+     */
+    class CtOfListApiDataLoaderDemo extends Polymer.Element {
+      static get is() { return 'ct-of-list-api-data-loader-demo'; }
+      static get properties() {
+        return {
+          items: {
+            type: Array,
+            value: function(){
+              return [];
+            },
+            notify: true
+          },
+          
+          url:{
+            type: Object
+          },
+          
+          responseParser: {
+            type: Object
+          },
+          
+          sortKeyGenerator: {
+            type: Object
+          },
+          
+          pouchDBName:{
+            type: String,
+            value: 'sample-db'
+          },
+          
+          listId:{
+            type: String,
+            value: 'sample-list'
+          },
+          
+          pageSize:{
+            type: Number,
+            value: 20
+          },
+          
+          headers: {
+            type: Object
+          },
+          
+          requestInProgress:{
+            type:Boolean,
+            observer: '_onRequestInProgress'
+          }
+        };
+      }
+      
+      static get observers() {
+        return [
+          '_onItemsChanged(items, items.splices)'
+          
+        ]
+      }
+      
+      connectedCallback() {
+        super.connectedCallback();
+        this.set('url', this._url);
+        this.set('sortKeyGenerator', this._sortKeyGenerator);
+        this.set('headers', this._headers);
+      }
+      
+      _url(pageSize, startKey){
+        var url = 'https://staging-api.mywnetwork.com:81/customer-healths?phoneNo=85291764694&pageSize=' + this.pageSize;
+        if(startKey){
+          url = url + '&startKey=' + startKey.join(',');
+        }
+        return url;
+      }
+      
+      _sortKeyGenerator(item){
+        if(!item){
+          console.warn('Missing item');
+          return;
+        }
+        return [item.date, item.groupId, item.id];
+      }
+      
+      _headers(){
+        return new Promise((resolve, reject) => {
+          resolve({
+            "Authorization": "Basic d2VsbG5lc3M6d2VsbG5lc3N4cHJlc3M="
+          });
+        });
+      }
+      
+      _onItemsChanged(e){
+        console.log('Items updated', e);
+      }
+      
+      _onRequestInProgress(){
+        console.log('Reuqest is in progress...', this.requestInProgress);
+      }
+    }
+
+    window.customElements.define(CtOfListApiDataLoaderDemo.is, CtOfListApiDataLoaderDemo);
+  </script>
+</dom-module>
