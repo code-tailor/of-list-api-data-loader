@@ -56,7 +56,7 @@ class OfflineListDataManager {
 
         // compare item with local item
         var localItem = localItems[localItemIndex];
-        let comparatorValue = this._compareItems(items[index], this._items[localItem.id]);
+        let comparatorValue = this._compareItems(this._items[localItem.id], items[index]);
         
         if (comparatorValue < 0) {
           //prepend this item to localItems.
