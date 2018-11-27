@@ -4,7 +4,7 @@
   "main": "ct-of-list-api-data-loader.html",
   "dependencies": {
     "polymer": "Polymer/polymer#^2.0.0",
-    "pouchdb": "^7.0.0"
+    "pouchdb": "6.4.1"
   },
   "devDependencies": {
     "iron-demo-helpers": "PolymerElements/iron-demo-helpers#^2.0.0",
