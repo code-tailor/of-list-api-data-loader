@@ -48,6 +48,25 @@ ct.offlineFirstListAPIDataLoader = class OfflineFirstListAPIDataLoader {
     this._offlineListDataManager.spliceObserver(callbackFn);
   }
   
+  /**
+   * Used to refresh list data
+   */
+  refresh(){
+    let noOfFetchedPage = this._items.length / this.pageSize;
+    this._items = [];
+    this._refreshListData(noOfFetchedPage);
+  }
+
+  _refreshListData(noOfPageToBeFetched, counter){
+    var counter = counter || 0;
+    this._loadPageFromServer().then(() => {
+      counter++;
+      if(counter < noOfPageToBeFetched){
+        this._refreshListData(noOfPageToBeFetched, counter);
+      };
+    });
+  }
+
   _getStartKey(){
     if(!this._items.length){
       return;

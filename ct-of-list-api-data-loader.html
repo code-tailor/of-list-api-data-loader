@@ -132,6 +132,10 @@
         });
       }
       
+      refresh() {
+        this._offlineFirstListAPIDataLoader.refresh();
+      }
+      
       spliceObserver(index, removedItemCount, ...addItems){
         this.splice('items', index, removedItemCount, ...addItems);
       };
