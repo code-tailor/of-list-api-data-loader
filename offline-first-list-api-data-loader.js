@@ -53,6 +53,7 @@ ct.offlineFirstListAPIDataLoader = class OfflineFirstListAPIDataLoader {
    */
   refresh(){
     let noOfFetchedPage = this._items.length / this.pageSize;
+    noOfFetchedPage = Math.ceil(noOfFetchedPage);
     this._items = [];
     this._refreshListData(noOfFetchedPage);
   }
