@@ -31,7 +31,12 @@ ct.offlineFirstListAPIDataLoader = class OfflineFirstListAPIDataLoader {
           resolve();
           return;
         }
-        
+
+        if(this._endOfList){
+          resolve();
+          return;
+        }
+
         this._loadPageFromServer().then(() => {
           resolve();
         });
@@ -102,7 +107,8 @@ ct.offlineFirstListAPIDataLoader = class OfflineFirstListAPIDataLoader {
               var parsedData = this.responseParser(data.rows);
               this._items.push(...parsedData);
               resolve(parsedData);
-              this._offlineListDataManager.upsert(parsedData,startKey, parsedData.length < this.pageSize);
+              this._endOfList = parsedData.length < this.pageSize;
+              this._offlineListDataManager.upsert(parsedData,startKey, this._endOfList);
             });
           }).catch(function(err) {
              console.error('Failed to toad page. Url:'+ url, err);

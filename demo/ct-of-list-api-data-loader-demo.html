@@ -96,7 +96,7 @@
       }
       
       _url(pageSize, startKey){
-        var url = 'https://staging-api.mywnetwork.com:81/customer-healths?phoneNo=85291764694&pageSize=' + this.pageSize;
+        var url = 'https://staging-api.mywnetwork.com:81/customer-healths?pageSize=' + this.pageSize;
         if(startKey){
           url = url + '&startKey=' + startKey.join(',');
         }
@@ -108,13 +108,13 @@
           console.warn('Missing item');
           return;
         }
-        return [item.date, item.groupId, item.id];
+        return [item.date,item.id];
       }
       
       _headers(){
         return new Promise((resolve, reject) => {
           resolve({
-            "Authorization": "Basic d2VsbG5lc3M6d2VsbG5lc3N4cHJlc3M="
+            "X-Firebase-Auth": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjIzNTBiNWY2NDM0Zjc2Y2NiM2IxMTlmZGQ4OGQxMzhjOWFjNTVmY2UiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vd3hzLW1lbWJlcnMtc3RhZ2luZyIsImF1ZCI6Ind4cy1tZW1iZXJzLXN0YWdpbmciLCJhdXRoX3RpbWUiOjE1NDQxNTkyMzUsInVzZXJfaWQiOiJzVjN5TDNqSElCWXU3Z1FsYk10SlhGZ3lNNDQyIiwic3ViIjoic1YzeUwzakhJQll1N2dRbGJNdEpYRmd5TTQ0MiIsImlhdCI6MTU0NDE1OTIzNSwiZXhwIjoxNTQ0MTYyODM1LCJwaG9uZV9udW1iZXIiOiIrODUyMTIzNDU2NzgiLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7InBob25lIjpbIis4NTIxMjM0NTY3OCJdfSwic2lnbl9pbl9wcm92aWRlciI6InBob25lIn19.eoYkxva8DyOK2dZSsOVO298j5psrImYSZK90IsVAW7gUOijGeFOMfoSKHV2dHw9yMqnF1gnKRu1MVrW1NK3xEG-lT7RWTX5A4KiqWV153tEDVjl1XF52Jm03kMA-zesbM-Z4i-60tt_Ig4PW2MS510PIuapAnKZcL-z5cNdqh2OKgfx_xFM03fXbLgQBk2iLQrQ07qXCG5amUFXmh2FKRfklNoN6mZ5-5hwuRD1SaTszBwr5Bs5EtaSfLcZCQU-9afPmvd3EUb6n77BrqdCbVsoKv8b1xMlMiz_KLuVEIXivCeikDjGJ4j8OSLOuMgexRD224Y09WdLpqDulcfDSyg"
           });
         });
       }
