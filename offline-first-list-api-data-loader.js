@@ -23,16 +23,16 @@ ct.offlineFirstListAPIDataLoader = class OfflineFirstListAPIDataLoader {
    */
   loadNextPage() {
     return new Promise((resolve, reject) => {
+      if(this._endOfList){
+        resolve();
+        return;
+      }
+
       let startKey = this._getStartKey();
       
       this._offlineListDataManager.readPage(this.pageSize,startKey).then(list => {
         if(list.items && list.items.length){
           this._items.push(...list.items);
-          resolve();
-          return;
-        }
-
-        if(this._endOfList){
           resolve();
           return;
         }
