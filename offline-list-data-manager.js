@@ -64,7 +64,6 @@ class OfflineListDataManager {
           this._spliceLocalItems(localItemIndex, 0, items[index]);
           //Remove this items duplicate instance if any
           this._removeFromLocalItems(items[index]._id, localItemIndex+1);
-          localItemIndex++;
         }
 
         if (comparatorValue > 0) {
