@@ -70,6 +70,8 @@ class OfflineListDataManager {
           //remove this local item.
           this._removeItem(localItems[localItemIndex]);
           this._spliceLocalItems(localItemIndex, 1);
+          index--;
+          continue;
         }
         
         if((index + 1) === items.length){
