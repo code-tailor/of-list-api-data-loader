@@ -147,10 +147,15 @@ class OfflineListDataManager {
    * @returns {Boolean} `true` if given item is inserted or updated.
    */
   _upsertItem(item) {
-    if(this._items[item.id]){
+    let localItem = this._items[item.id];
+    if(localItem){
+      item._rev = localItem._rev;
+    }
+    let isUpdated = this._compare(localItem, item);
+    if(localItem && isUpdated === 0){
       return false;
     }
-    
+
     this._items[item._id] = item;
     this._localStore.upsertItems([item]);
     
@@ -169,7 +174,7 @@ class OfflineListDataManager {
 
   _removeFromLocalItems(id, startIndex) {
     var items = this._localDoc.items;
-    for(var i=startIndex; i++; i < items.length) {
+    for(var i=startIndex; i < items.length; i++) {
       if(!items[i]){
         return;
       }
