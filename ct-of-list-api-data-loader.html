@@ -45,6 +45,16 @@
             value: false,
             notify: true
           },
+
+          /*
+           * Output property
+           * True when all the recrods are fetched from server
+           */
+           endOfList:{
+            type: Boolean,
+            value: false,
+            notify: true
+          },
           
          /*
           * Input property
@@ -127,6 +137,7 @@
         
         this._offlineFirstListAPIDataLoader.loadNextPage().then(() =>{
           this.set('requestInProgress', false);
+          this.set('endOfList', this._offlineFirstListAPIDataLoader._endOfList);
         }).catch(() =>{
           this.set('requestInProgress', false);
         });
