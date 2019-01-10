@@ -33,6 +33,7 @@ ct.offlineFirstListAPIDataLoader = class OfflineFirstListAPIDataLoader {
       this._offlineListDataManager.readPage(this.pageSize,startKey).then(list => {
         if(list.items && list.items.length){
           this._items.push(...list.items);
+          this._endOfList = list.items.length < this.pageSize;
           resolve();
           return;
         }
