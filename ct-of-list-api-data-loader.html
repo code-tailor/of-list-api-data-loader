@@ -126,6 +126,15 @@
           
         ]
       }
+
+      connectedCallback(){
+        super.connectedCallback();
+        window.addEventListener('refresh-completed', this._refreshCompleted.bind(this));
+      }
+
+      _refreshCompleted(){
+        this.set('requestInProgress', false);
+      }
       
       // Fetch page in offline first manner
       loadNextPage() {
@@ -144,6 +153,11 @@
       }
       
       refresh() {
+        if(this.requestInProgress){
+          return;
+        }
+        
+        this.set('requestInProgress', true);
         this._offlineFirstListAPIDataLoader.refresh();
       }
       

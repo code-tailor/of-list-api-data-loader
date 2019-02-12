@@ -68,6 +68,11 @@ ct.offlineFirstListAPIDataLoader = class OfflineFirstListAPIDataLoader {
     var counter = counter || 0;
     this._loadPageFromServer().then(() => {
       counter++;
+     
+     if(counter === noOfPageToBeFetched){
+      window.dispatchEvent(new CustomEvent("refresh-completed"))
+     }
+
       if(counter < noOfPageToBeFetched){
         this._refreshListData(noOfPageToBeFetched, counter);
       };
