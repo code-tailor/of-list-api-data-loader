@@ -129,10 +129,11 @@
 
       connectedCallback(){
         super.connectedCallback();
-        window.addEventListener('refresh-completed', this._refreshCompleted.bind(this));
+        window.addEventListener('refresh-completed', this._setReqInProgressToFalse.bind(this));
+        window.addEventListener('list-api-failed', this._setReqInProgressToFalse.bind(this));
       }
 
-      _refreshCompleted(){
+      _setReqInProgressToFalse(){
         this.set('requestInProgress', false);
       }
       

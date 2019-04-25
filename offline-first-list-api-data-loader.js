@@ -40,6 +40,8 @@ ct.offlineFirstListAPIDataLoader = class OfflineFirstListAPIDataLoader {
 
         this._loadPageFromServer().then(() => {
           resolve();
+        }).catch((error) => {
+          window.dispatchEvent(new CustomEvent("list-api-failed", {detail: error}))
         });
       });
     });
@@ -69,13 +71,15 @@ ct.offlineFirstListAPIDataLoader = class OfflineFirstListAPIDataLoader {
     this._loadPageFromServer().then(() => {
       counter++;
      
-     if(counter === noOfPageToBeFetched){
+     if(counter >= noOfPageToBeFetched){
       window.dispatchEvent(new CustomEvent("refresh-completed"))
      }
 
       if(counter < noOfPageToBeFetched){
         this._refreshListData(noOfPageToBeFetched, counter);
       };
+    }).catch((error) => {
+      window.dispatchEvent(new CustomEvent("list-api-failed", {detail: error}))
     });
   }
 
@@ -105,7 +109,8 @@ ct.offlineFirstListAPIDataLoader = class OfflineFirstListAPIDataLoader {
           headers: headers
         }).then((response) => {
             if (response.status !== 200) {
-              console.error('Failed to toad page. Url: '+ url, response.status);
+              reject(response);
+              console.error('Failed to load page. Url: '+ url, response.status);
               return;
             }
 
